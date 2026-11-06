@@ -122,6 +122,12 @@ body,div,span,input,select,textarea,button,label{font-family:var(--font-sans)}
 .toast.show{opacity:1}
 .acc-modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:8888;display:flex;align-items:center;justify-content:center}
 .acc-modal-box{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:1.5rem;width:330px;max-width:95vw}
+.dz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:18px 10px;text-align:center;cursor:pointer;color:var(--color-text-secondary);font-size:12px;background:var(--color-background-secondary);transition:border-color .12s,background .12s}
+.dz:hover,.dz.over{border-color:var(--color-border-primary);background:var(--color-background-primary)}
+.dz b{color:var(--color-text-primary);font-weight:500;font-size:13px}.dz small{font-size:10.5px;color:var(--color-text-tertiary)}
+.tvf{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:5px;border:0.5px solid var(--color-border-tertiary)}
+.tvf-n{flex:1;min-width:0}.tvf-nm{font-size:11px;color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tvf-s{font-size:10px;color:var(--color-text-tertiary)}
+.tvf-p{font-size:11px;font-weight:500;min-width:60px;text-align:right}
 .xl-file-item{display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:5px;border:0.5px solid var(--color-border-tertiary)}
 .xl-fn{flex:1;font-size:11px;color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xl-pnl{font-size:11px;font-weight:500;min-width:60px;text-align:right}
@@ -416,11 +422,11 @@ function renderCalendar(){
     const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const data=dd()[key]||{},tr=data.trades||[];
     const pnl=tr.reduce((s,t)=>s+t.pnl,0),has=tr.length>0,ia=activeDayKey===key;
-    const xc=(data.xlsxFiles||[]).length;
+    const xc=(data.xlsxFiles||[]).length+(tr.some(t=>t.src==='tv')?1:0);
     let cls='day-cell'+(ia?' active-day':'')+(has?(pnl>=0?' profit':' loss'):'');
     const wr=has?tr.filter(t=>t.pnl>0).length/tr.length*100:null;
     const assets=[...new Set(tr.map(t=>t.pair))].slice(0,2).join(',');
-    let inner=`<div class="day-num"><span>${d}</span>${xc?`<span class="xl-dot" title="${xc} xlsx"></span>`:''}</div>`;
+    let inner=`<div class="day-num"><span>${d}</span>${xc?`<span class="xl-dot" title="dados importados"></span>`:''}</div>`;
     if(has){inner+=`<div class="day-pnl ${pnl>=0?'pos':'neg'}">${fmtU(pnl)}</div><div class="day-ops">${tr.length} op${wr!==null?' · '+wr.toFixed(0)+'%':''}</div>`;if(assets)inner+=`<div class="day-asset">${assets}</div>`;}
     let dots='';
     if(data.preText||data.prePhotos?.length)dots+=`<div class="dot dot-pre"></div>`;
@@ -462,11 +468,11 @@ function renderWeekPanel({wn,keys,m,y}){
   const dwt=sk.filter(k=>(dd()[k]?.trades||[]).length>0).length;
   const cid=`wkc-${wn}-${m}-${y}`;
   const dayRows=sk.map(k=>{const tr=(dd()[k]||{}).trades||[],dp=tr.reduce((s,t)=>s+t.pnl,0),dw=tr.filter(t=>t.pnl>0).length;return`<tr><td>${k.slice(5)}</td><td>${tr.length||'—'}</td><td>${tr.length?dw+'/'+(tr.length-dw):'—'}</td><td>${tr.length?(dw/tr.length*100).toFixed(0)+'%':'—'}</td><td class="${tr.length?(dp>=0?'pos-t':'neg-t'):''}">${tr.length?fmtU(dp):'—'}</td></tr>`;}).join('');
-  document.getElementById('week-panel').innerHTML=`<div class="panel"><div class="panel-head"><div class="panel-title"><i class="ti ti-calendar-week" style="font-size:15px" aria-hidden="true"></i>Semana ${wn} — ${MONTHS[m]} ${y}${allT.length?`<span class="pdg" style="background:${pnl>=0?'#E1F5EE':'#FCEBEB'};color:${pnl>=0?'#085041':'#A32D2D'}">${fmtU(pnl)}</span>`:'<span class="pdg">Sem operações</span>'}</div><button class="btn btn-xs" onclick="closeWeek()"><i class="ti ti-x" style="font-size:12px"></i></button></div>${!allT.length?`<div class="week-empty-hint"><strong>Nenhuma operação nesta semana.</strong> Clique em um dia, vá para a aba XLSX e importe o arquivo do MetaTrader, ou adicione operações manualmente.</div>`:''}<div class="agrid4"><div class="astat"><div class="astat-l">P&L semana</div><div class="astat-v ${allT.length?(pnl>=0?'pos':'neg'):''}">${allT.length?fmtU(pnl):'—'}</div></div><div class="astat"><div class="astat-l">Operações</div><div class="astat-v">${allT.length||'—'}</div></div><div class="astat"><div class="astat-l">Win rate</div><div class="astat-v">${wr!==null?wr.toFixed(1)+'%':'—'}</div></div><div class="astat"><div class="astat-l">Profit factor</div><div class="astat-v">${pf?pf.toFixed(2):'—'}</div></div><div class="astat"><div class="astat-l">Wins / Losses</div><div class="astat-v">${allT.length?wins+' / '+losses:'—'}</div></div><div class="astat"><div class="astat-l">Média/op.</div><div class="astat-v ${allT.length?(avg>=0?'pos':'neg'):''}">${allT.length?fmtU(avg):'—'}</div></div><div class="astat"><div class="astat-l">Gross ganho</div><div class="astat-v ${gw>0?'pos':''}">${gw?fmtU(gw):'—'}</div></div><div class="astat"><div class="astat-l">Gross perda</div><div class="astat-v ${gl>0?'neg':''}">${gl?fmtU(-gl):'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div class="mkc"><div class="mkl"><i class="ti ti-chart-arrows" aria-hidden="true"></i>Ativos</div>${assets.length?`<div style="display:flex;flex-wrap:wrap;gap:4px">${assets.map(a=>{const ap=allT.filter(t=>t.pair===a).reduce((s,t)=>s+t.pnl,0);return`<div class="atag" style="${ap>=0?'background:#E1F5EE;border-color:#9FE1CB;color:#085041':'background:#FCEBEB;border-color:#F7C1C1;color:#A32D2D'}">${a} ${fmtU(ap)}</div>`;}).join('')}</div>`:`<div style="font-size:12px;color:var(--color-text-tertiary)">Nenhum ativo esta semana.</div>`}</div><div class="mkc"><div class="mkl"><i class="ti ti-list" aria-hidden="true"></i>Por dia</div><table class="tbl"><thead><tr><th>Data</th><th>Op.</th><th>W/L</th><th>WR</th><th>P&L</th></tr></thead><tbody>${dayRows}</tbody></table></div></div><div class="mkc" style="margin-bottom:10px"><div class="mkl"><i class="ti ti-bulb" aria-hidden="true"></i>Análise da semana</div><div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8">${weekAnalysis(allT,pnl,wr,pf,wins,losses,dwt,sk.length)}</div></div><div class="mkc"><div class="mkl"><i class="ti ti-chart-line" aria-hidden="true"></i>P&L acumulado da semana</div><div class="week-chart-wrap"><canvas id="${cid}" role="img" aria-label="P&L semanal">P&L semanal.</canvas></div></div></div>`;
+  document.getElementById('week-panel').innerHTML=`<div class="panel"><div class="panel-head"><div class="panel-title"><i class="ti ti-calendar-week" style="font-size:15px" aria-hidden="true"></i>Semana ${wn} — ${MONTHS[m]} ${y}${allT.length?`<span class="pdg" style="background:${pnl>=0?'#E1F5EE':'#FCEBEB'};color:${pnl>=0?'#085041':'#A32D2D'}">${fmtU(pnl)}</span>`:'<span class="pdg">Sem operações</span>'}</div><button class="btn btn-xs" onclick="closeWeek()"><i class="ti ti-x" style="font-size:12px"></i></button></div>${!allT.length?`<div class="week-empty-hint"><strong>Nenhuma operação nesta semana.</strong> Clique em um dia, vá para a aba Importar e envie XLSX (MetaTrader) ou CSV (Tradovate), ou adicione operações manualmente.</div>`:''}<div class="agrid4"><div class="astat"><div class="astat-l">P&L semana</div><div class="astat-v ${allT.length?(pnl>=0?'pos':'neg'):''}">${allT.length?fmtU(pnl):'—'}</div></div><div class="astat"><div class="astat-l">Operações</div><div class="astat-v">${allT.length||'—'}</div></div><div class="astat"><div class="astat-l">Win rate</div><div class="astat-v">${wr!==null?wr.toFixed(1)+'%':'—'}</div></div><div class="astat"><div class="astat-l">Profit factor</div><div class="astat-v">${pf?pf.toFixed(2):'—'}</div></div><div class="astat"><div class="astat-l">Wins / Losses</div><div class="astat-v">${allT.length?wins+' / '+losses:'—'}</div></div><div class="astat"><div class="astat-l">Média/op.</div><div class="astat-v ${allT.length?(avg>=0?'pos':'neg'):''}">${allT.length?fmtU(avg):'—'}</div></div><div class="astat"><div class="astat-l">Gross ganho</div><div class="astat-v ${gw>0?'pos':''}">${gw?fmtU(gw):'—'}</div></div><div class="astat"><div class="astat-l">Gross perda</div><div class="astat-v ${gl>0?'neg':''}">${gl?fmtU(-gl):'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div class="mkc"><div class="mkl"><i class="ti ti-chart-arrows" aria-hidden="true"></i>Ativos</div>${assets.length?`<div style="display:flex;flex-wrap:wrap;gap:4px">${assets.map(a=>{const ap=allT.filter(t=>t.pair===a).reduce((s,t)=>s+t.pnl,0);return`<div class="atag" style="${ap>=0?'background:#E1F5EE;border-color:#9FE1CB;color:#085041':'background:#FCEBEB;border-color:#F7C1C1;color:#A32D2D'}">${a} ${fmtU(ap)}</div>`;}).join('')}</div>`:`<div style="font-size:12px;color:var(--color-text-tertiary)">Nenhum ativo esta semana.</div>`}</div><div class="mkc"><div class="mkl"><i class="ti ti-list" aria-hidden="true"></i>Por dia</div><table class="tbl"><thead><tr><th>Data</th><th>Op.</th><th>W/L</th><th>WR</th><th>P&L</th></tr></thead><tbody>${dayRows}</tbody></table></div></div><div class="mkc" style="margin-bottom:10px"><div class="mkl"><i class="ti ti-bulb" aria-hidden="true"></i>Análise da semana</div><div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8">${weekAnalysis(allT,pnl,wr,pf,wins,losses,dwt,sk.length)}</div></div><div class="mkc"><div class="mkl"><i class="ti ti-chart-line" aria-hidden="true"></i>P&L acumulado da semana</div><div class="week-chart-wrap"><canvas id="${cid}" role="img" aria-label="P&L semanal">P&L semanal.</canvas></div></div></div>`;
   setTimeout(()=>{if(weekCh){try{weekCh.destroy();}catch(e){}}weekCh=makeChart(cid,allT);},50);
 }
 function weekAnalysis(trades,pnl,wr,pf,wins,losses,dwt,total){
-  if(!trades.length)return`Nenhuma operação registrada. Para ver análises, importe arquivos XLSX nos dias desta semana ou adicione operações manualmente.`;
+  if(!trades.length)return`Nenhuma operação registrada. Para ver análises, importe arquivos XLSX/CSV nos dias desta semana ou adicione operações manualmente.`;
   const lines=[];
   lines.push(pnl>=0?`Semana positiva: <strong class="pos-t">${fmtU(pnl)}</strong>.`:`Semana negativa: <strong class="neg-t">${fmtU(pnl)}</strong>.`);
   if(wr!==null){if(wr>=60)lines.push(`WR <strong>${wr.toFixed(0)}%</strong> — boa consistência.`);else if(wr>=50)lines.push(`WR <strong>${wr.toFixed(0)}%</strong> — levemente positivo.`);else lines.push(`WR <strong>${wr.toFixed(0)}%</strong> — abaixo de 50%, revisar entradas.`);}
@@ -489,11 +495,10 @@ function renderDayPanel(key){
   const xf=data.xlsxFiles||[];
   const xlHtml=xf.length?xf.map((f,i)=>{const ft=tr.filter(t=>t.xlsxIdx===i),fp=ft.reduce((s,t)=>s+t.pnl,0);return`<div class="xl-file-item"><i class="ti ti-file-spreadsheet" style="font-size:13px;color:#639922" aria-hidden="true"></i><div class="xl-fn" title="${f.name}">${f.name}</div><div class="xl-pnl ${fp>=0?'pos-t':'neg-t'}">${fmtU(fp)}</div><button class="btn btn-xs btn-danger" onclick="rmXlsx('${key}',${i})"><i class="ti ti-trash" style="font-size:11px"></i></button></div>`;}).join(''):`<div style="font-size:12px;color:var(--color-text-tertiary);text-align:center;padding:8px 0">Nenhum arquivo importado.</div>`;
   const opsHtml=tr.length?`<div class="agrid3"><div class="astat"><div class="astat-l">P&L</div><div class="astat-v ${pnl>=0?'pos':'neg'}">${fmtU(pnl)}</div></div><div class="astat"><div class="astat-l">Win rate</div><div class="astat-v">${wr!==null?wr.toFixed(1)+'%':'—'}</div></div><div class="astat"><div class="astat-l">Profit factor</div><div class="astat-v">${pf?pf.toFixed(2):'—'}</div></div><div class="astat"><div class="astat-l">Operações</div><div class="astat-v">${tr.length}</div></div><div class="astat"><div class="astat-l">Média/op.</div><div class="astat-v ${avg>=0?'pos':'neg'}">${fmtU(avg)}</div></div><div class="astat"><div class="astat-l">Resultado</div><div class="astat-v ${pnl>=0?'pos':'neg'}">${pnl>=0?'Lucro':'Prejuízo'}</div></div></div><div style="overflow-x:auto;margin-bottom:10px"><table class="tbl" style="min-width:340px"><colgroup><col style="width:17%"><col style="width:9%"><col style="width:9%"><col style="width:13%"><col style="width:13%"><col style="width:12%"><col style="width:21%"><col style="width:6%"></colgroup><thead><tr><th>Ativo</th><th>Tipo</th><th>Vol.</th><th>Abertura</th><th>Fechamento</th><th>Lucro</th><th>Result.</th><th></th></tr></thead><tbody>${tr.map((t,i)=>`<tr><td style="font-weight:500">${t.pair}</td><td><span class="pill ${t.dir==='BUY'?'pill-b':'pill-s'}">${t.dir}</span></td><td>${t.lots}</td><td>${t.entry||'—'}</td><td>${t.exit||'—'}</td><td class="${t.pnl>=0?'pos-t':'neg-t'}">${fmtU(t.pnl)}</td><td class="${t.pnl>=0?'pos-t':'neg-t'}">${t.pnl>=0?'Lucro':'Prejuízo'}</td><td><button class="btn btn-xs" onclick="rmT('${key}',${i})"><i class="ti ti-trash" style="font-size:11px"></i></button></td></tr>`).join('')}</tbody></table></div>`:
-    `<div style="text-align:center;padding:10px 0;font-size:12px;color:var(--color-text-tertiary)">Nenhuma operação. Importe XLSX ou adicione manualmente.</div>`;
-  document.getElementById('day-panel').innerHTML=`<div class="panel"><div class="panel-head"><div class="panel-title"><i class="ti ti-calendar-event" style="font-size:15px" aria-hidden="true"></i>Diário <span class="pdg">${key}</span>${tr.length?`<span class="pdg" style="background:${pnl>=0?'#E1F5EE':'#FCEBEB'};color:${pnl>=0?'#085041':'#A32D2D'}">${fmtU(pnl)}</span>`:''}</div><button class="btn btn-xs" onclick="closeDayPanel()"><i class="ti ti-x" style="font-size:12px"></i></button></div><div class="stabs"><div class="stab active" onclick="swTab(this,'top-${key}')"><i class="ti ti-chart-bar" style="font-size:12px;vertical-align:-2px"></i> Operações</div><div class="stab" onclick="swTab(this,'txl-${key}')"><i class="ti ti-file-spreadsheet" style="font-size:12px;vertical-align:-2px"></i> XLSX${xf.length?` (${xf.length})`:''}</div><div class="stab" onclick="swTab(this,'tpr-${key}')"><i class="ti ti-sunrise" style="font-size:12px;vertical-align:-2px"></i> Pré-market</div><div class="stab" onclick="swTab(this,'tpo-${key}')"><i class="ti ti-sunset" style="font-size:12px;vertical-align:-2px"></i> Pós-market</div><div class="stab" onclick="swTab(this,'tnt-${key}')"><i class="ti ti-notes" style="font-size:12px;vertical-align:-2px"></i> Anotação</div></div><div id="top-${key}" class="sbody on">${opsHtml}<div class="sep"></div><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:7px">Adicionar manualmente</div><div class="irow"><input type="text" id="dp-${key}" placeholder="Par (XAU/USD)" value="XAU/USD" style="flex:1"><select id="dd-${key}" style="flex:0 0 76px"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div><div class="irow"><input type="number" id="de-${key}" placeholder="Abertura" step="0.01"><input type="number" id="dx-${key}" placeholder="Fechamento" step="0.01"><input type="number" id="dl-${key}" placeholder="Volume" step="0.01" value="0.1"><input type="number" id="dn-${key}" placeholder="Lucro ($)" step="0.01"></div><button class="btn btn-primary" style="width:100%;font-size:12px" onclick="addT('${key}')"><i class="ti ti-plus" style="font-size:12px;vertical-align:-2px"></i> Adicionar</button></div><div id="txl-${key}" class="sbody"><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px">Colunas: <strong>A</strong>=Ativo · <strong>B</strong>=Tipo · <strong>C</strong>=Volume · <strong>D</strong>=Abertura · <strong>E</strong>=Fechamento · <strong>F</strong>=Lucro</div><div id="xl-files-${key}" style="margin-bottom:8px">${xlHtml}</div><div style="display:flex;align-items:center;gap:6px"><label class="lbl-up" for="xl-${key}" style="font-size:12px"><i class="ti ti-file-plus" style="font-size:13px" aria-hidden="true"></i> Adicionar XLSX</label><input type="file" id="xl-${key}" accept=".xlsx,.xls" style="display:none" onchange="addXlsx('${key}',this)"></div><div id="xl-ist-${key}" class="ist"></div></div><div id="tpr-${key}" class="sbody"><div class="mkt2"><div class="mkc"><div class="mkl"><i class="ti ti-clock" aria-hidden="true"></i>Pré-market</div><div style="margin-bottom:7px"><div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Ativos</div><div style="display:flex;gap:5px"><input type="text" id="pra-${key}" placeholder="XAU/USD" style="flex:1;font-size:12px"><button class="btn btn-xs" onclick="addAsset('${key}','pre')"><i class="ti ti-plus" style="font-size:12px"></i></button></div><div class="atags" id="pre-at-${key}">${rAssets(key,'pre')}</div></div><textarea class="ta" id="prt-${key}" placeholder="Contexto, viés, suporte/resistência..." rows="4">${data.preText||''}</textarea><div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px"><label class="lbl-up" for="pri-${key}"><i class="ti ti-photo" style="font-size:12px"></i> Foto</label><input type="file" id="pri-${key}" accept="image/*" multiple style="display:none" onchange="addPhoto('${key}','pre',this)"><button class="btn btn-primary btn-xs" onclick="saveMkt('${key}','pre')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div><div class="pgrid" id="pre-ph-${key}">${rPhotos(key,'pre')}</div></div><div class="mkc"><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px">Setup planejado</div><textarea class="ta" id="prs-${key}" placeholder="Setup, alvos, invalidação..." rows="4">${data.preSetup||''}</textarea><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-top:9px;margin-bottom:5px">Estado emocional</div><select id="prm-${key}" style="width:100%;font-size:12px"><option value="">Selecione...</option>${['Focado','Ansioso','Confiante','Cansado','Neutro','Impaciente'].map(v=>`<option ${data.preMood===v?'selected':''}>${v}</option>`).join('')}</select></div></div></div><div id="tpo-${key}" class="sbody"><div class="mkt2"><div class="mkc"><div class="mkl"><i class="ti ti-moon" aria-hidden="true"></i>Pós-market</div><div style="margin-bottom:7px"><div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Ativos operados</div><div style="display:flex;gap:5px"><input type="text" id="poa-${key}" placeholder="XAU/USD" style="flex:1;font-size:12px"><button class="btn btn-xs" onclick="addAsset('${key}','pos')"><i class="ti ti-plus" style="font-size:12px"></i></button></div><div class="atags" id="pos-at-${key}">${rAssets(key,'pos')}</div></div><textarea class="ta" id="pot-${key}" placeholder="O que aconteceu, erros, acertos..." rows="4">${data.posText||''}</textarea><div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px"><label class="lbl-up" for="poi-${key}"><i class="ti ti-photo" style="font-size:12px"></i> Foto</label><input type="file" id="poi-${key}" accept="image/*" multiple style="display:none" onchange="addPhoto('${key}','pos',this)"><button class="btn btn-primary btn-xs" onclick="saveMkt('${key}','pos')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div><div class="pgrid" id="pos-ph-${key}">${rPhotos(key,'pos')}</div></div><div class="mkc"><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px">Lições aprendidas</div><textarea class="ta" id="pol-${key}" placeholder="Aprendizados..." rows="4">${data.posLessons||''}</textarea><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-top:9px;margin-bottom:5px">Seguiu o plano?</div><select id="pop-${key}" style="width:100%;font-size:12px"><option value="">Selecione...</option>${['Sim, totalmente','Parcialmente','Não segui','Não havia plano'].map(v=>`<option ${data.posPlan===v?'selected':''}>${v}</option>`).join('')}</select><button class="btn btn-primary" style="width:100%;font-size:12px;margin-top:9px" onclick="saveMkt('${key}','pos')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div></div></div><div id="tnt-${key}" class="sbody"><textarea class="ta" id="nt-${key}" placeholder="Anotação livre..." rows="6">${data.note||''}</textarea><button class="btn btn-primary" style="margin-top:7px;width:100%;font-size:12px" onclick="saveNote('${key}')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div></div>`;
+    `<div style="text-align:center;padding:10px 0;font-size:12px;color:var(--color-text-tertiary)">Nenhuma operação. Importe XLSX/CSV ou adicione manualmente.</div>`;
+  document.getElementById('day-panel').innerHTML=`<div class="panel"><div class="panel-head"><div class="panel-title"><i class="ti ti-calendar-event" style="font-size:15px" aria-hidden="true"></i>Diário <span class="pdg">${key}</span>${tr.length?`<span class="pdg" style="background:${pnl>=0?'#E1F5EE':'#FCEBEB'};color:${pnl>=0?'#085041':'#A32D2D'}">${fmtU(pnl)}</span>`:''}</div><button class="btn btn-xs" onclick="closeDayPanel()"><i class="ti ti-x" style="font-size:12px"></i></button></div><div class="stabs"><div class="stab active" onclick="swTab(this,'top-${key}')"><i class="ti ti-chart-bar" style="font-size:12px;vertical-align:-2px"></i> Operações</div><div class="stab" onclick="swTab(this,'txl-${key}')"><i class="ti ti-file-spreadsheet" style="font-size:12px;vertical-align:-2px"></i> Importar${(xf.length+tvs().files.length)?` (${xf.length+tvs().files.length})`:''}</div><div class="stab" onclick="swTab(this,'tpr-${key}')"><i class="ti ti-sunrise" style="font-size:12px;vertical-align:-2px"></i> Pré-market</div><div class="stab" onclick="swTab(this,'tpo-${key}')"><i class="ti ti-sunset" style="font-size:12px;vertical-align:-2px"></i> Pós-market</div><div class="stab" onclick="swTab(this,'tnt-${key}')"><i class="ti ti-notes" style="font-size:12px;vertical-align:-2px"></i> Anotação</div></div><div id="top-${key}" class="sbody on">${opsHtml}<div class="sep"></div><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:7px">Adicionar manualmente</div><div class="irow"><input type="text" id="dp-${key}" placeholder="Par (XAU/USD)" value="XAU/USD" style="flex:1"><select id="dd-${key}" style="flex:0 0 76px"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div><div class="irow"><input type="number" id="de-${key}" placeholder="Abertura" step="0.01"><input type="number" id="dx-${key}" placeholder="Fechamento" step="0.01"><input type="number" id="dl-${key}" placeholder="Volume" step="0.01" value="0.1"><input type="number" id="dn-${key}" placeholder="Lucro ($)" step="0.01"></div><button class="btn btn-primary" style="width:100%;font-size:12px" onclick="addT('${key}')"><i class="ti ti-plus" style="font-size:12px;vertical-align:-2px"></i> Adicionar</button></div><div id="txl-${key}" class="sbody"><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;line-height:1.6"><strong>XLSX (MetaTrader)</strong>: A=Ativo · B=Tipo · C=Volume · D=Abertura · E=Fechamento · F=Lucro — lançado no dia aberto.<br><strong>CSV (Tradovate)</strong>: Registro de notificações ou Histórico de ordens → operações montadas por FIFO e lançadas no dia de cada fechamento; Informação da conta, Posições e Ordens ativas → painel de conferência.</div><div id="xl-files-${key}" style="margin-bottom:8px">${xlHtml}</div>${tvPanelHtml()}<label class="dz" for="xl-${key}" style="margin-top:8px" ondragover="dzOver(event,this)" ondragleave="dzLeave(this)" ondrop="dzDrop(event,'${key}',this)"><i class="ti ti-upload" style="font-size:20px" aria-hidden="true"></i><b>Arraste arquivos aqui ou clique para escolher</b><small>.xlsx, .xls e .csv · vários arquivos de uma vez</small></label><input type="file" id="xl-${key}" accept=".xlsx,.xls,.csv" multiple style="display:none" onchange="addFiles('${key}',this.files,this)"><div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--color-text-secondary)"><label for="tvc-${key}">Comissão Tradovate por contrato/lado ($)</label><input type="number" id="tvc-${key}" min="0" step="0.01" value="${tvs().comm||0}" style="width:70px;font-size:11px" onchange="tvSetComm(this.value)"></div><div id="xl-ist-${key}" class="ist"></div></div><div id="tpr-${key}" class="sbody"><div class="mkt2"><div class="mkc"><div class="mkl"><i class="ti ti-clock" aria-hidden="true"></i>Pré-market</div><div style="margin-bottom:7px"><div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Ativos</div><div style="display:flex;gap:5px"><input type="text" id="pra-${key}" placeholder="XAU/USD" style="flex:1;font-size:12px"><button class="btn btn-xs" onclick="addAsset('${key}','pre')"><i class="ti ti-plus" style="font-size:12px"></i></button></div><div class="atags" id="pre-at-${key}">${rAssets(key,'pre')}</div></div><textarea class="ta" id="prt-${key}" placeholder="Contexto, viés, suporte/resistência..." rows="4">${data.preText||''}</textarea><div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px"><label class="lbl-up" for="pri-${key}"><i class="ti ti-photo" style="font-size:12px"></i> Foto</label><input type="file" id="pri-${key}" accept="image/*" multiple style="display:none" onchange="addPhoto('${key}','pre',this)"><button class="btn btn-primary btn-xs" onclick="saveMkt('${key}','pre')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div><div class="pgrid" id="pre-ph-${key}">${rPhotos(key,'pre')}</div></div><div class="mkc"><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px">Setup planejado</div><textarea class="ta" id="prs-${key}" placeholder="Setup, alvos, invalidação..." rows="4">${data.preSetup||''}</textarea><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-top:9px;margin-bottom:5px">Estado emocional</div><select id="prm-${key}" style="width:100%;font-size:12px"><option value="">Selecione...</option>${['Focado','Ansioso','Confiante','Cansado','Neutro','Impaciente'].map(v=>`<option ${data.preMood===v?'selected':''}>${v}</option>`).join('')}</select></div></div></div><div id="tpo-${key}" class="sbody"><div class="mkt2"><div class="mkc"><div class="mkl"><i class="ti ti-moon" aria-hidden="true"></i>Pós-market</div><div style="margin-bottom:7px"><div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Ativos operados</div><div style="display:flex;gap:5px"><input type="text" id="poa-${key}" placeholder="XAU/USD" style="flex:1;font-size:12px"><button class="btn btn-xs" onclick="addAsset('${key}','pos')"><i class="ti ti-plus" style="font-size:12px"></i></button></div><div class="atags" id="pos-at-${key}">${rAssets(key,'pos')}</div></div><textarea class="ta" id="pot-${key}" placeholder="O que aconteceu, erros, acertos..." rows="4">${data.posText||''}</textarea><div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px"><label class="lbl-up" for="poi-${key}"><i class="ti ti-photo" style="font-size:12px"></i> Foto</label><input type="file" id="poi-${key}" accept="image/*" multiple style="display:none" onchange="addPhoto('${key}','pos',this)"><button class="btn btn-primary btn-xs" onclick="saveMkt('${key}','pos')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div><div class="pgrid" id="pos-ph-${key}">${rPhotos(key,'pos')}</div></div><div class="mkc"><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:5px">Lições aprendidas</div><textarea class="ta" id="pol-${key}" placeholder="Aprendizados..." rows="4">${data.posLessons||''}</textarea><div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-top:9px;margin-bottom:5px">Seguiu o plano?</div><select id="pop-${key}" style="width:100%;font-size:12px"><option value="">Selecione...</option>${['Sim, totalmente','Parcialmente','Não segui','Não havia plano'].map(v=>`<option ${data.posPlan===v?'selected':''}>${v}</option>`).join('')}</select><button class="btn btn-primary" style="width:100%;font-size:12px;margin-top:9px" onclick="saveMkt('${key}','pos')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div></div></div><div id="tnt-${key}" class="sbody"><textarea class="ta" id="nt-${key}" placeholder="Anotação livre..." rows="6">${data.note||''}</textarea><button class="btn btn-primary" style="margin-top:7px;width:100%;font-size:12px" onclick="saveNote('${key}')"><i class="ti ti-device-floppy" style="font-size:11px;vertical-align:-2px"></i> Salvar</button></div></div>`;
 }
 function closeDayPanel(){activeDayKey=null;document.getElementById('day-panel').innerHTML='';renderCalendar();}
-function addXlsx(key,input){const file=input.files[0];if(!file)return;const sEl=document.getElementById('xl-ist-'+key);if(sEl){sEl.className='ist ld';sEl.innerHTML='<i class="ti ti-loader" style="font-size:11px;vertical-align:-2px"></i> Lendo...';}const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const rows=[];wb.SheetNames.forEach(n=>{XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''}).forEach(r=>rows.push(r.map(c=>String(c||'').trim())));});const idx=(dd()[key].xlsxFiles||[]).length;const trades=parseXLSX(rows,key,idx);if(!trades.length){if(sEl){sEl.className='ist err';sEl.innerHTML='Nenhuma operação encontrada.';}input.value='';return;}if(!dd()[key].xlsxFiles)dd()[key].xlsxFiles=[];dd()[key].xlsxFiles.push({name:file.name,count:trades.length});dd()[key].trades=[...dd()[key].trades,...trades];const fp=trades.reduce((s,t)=>s+t.pnl,0);if(sEl){sEl.className='ist ok';sEl.innerHTML=`<i class="ti ti-check" style="font-size:11px;vertical-align:-2px"></i> ${trades.length} op · P&L: ${fmtU(fp)}`;}toast(`${file.name} · ${trades.length} op · ${fmtU(fp)}`);updateAll();}catch(e){if(sEl){sEl.className='ist err';sEl.innerHTML='Erro: '+e.message;}}};reader.readAsArrayBuffer(file);input.value='';}
 function rmXlsx(key,idx){const d=dd()[key];if(!d)return;const fname=(d.xlsxFiles||[])[idx]?.name||'arquivo';d.trades=(d.trades||[]).filter(t=>t.xlsxIdx!==idx);d.trades.forEach(t=>{if(t.xlsxIdx>idx)t.xlsxIdx--;});(d.xlsxFiles||[]).splice(idx,1);toast(`${fname} removido.`);updateAll();}
 function parseXLSX(rows,key,xlsxIdx){const trades=[];for(const row of rows){if(!row||row.length<6)continue;const cA=String(row[0]||'').trim(),cB=String(row[1]||'').trim(),cC=String(row[2]||'').trim();const cD=String(row[3]||'').trim(),cE=String(row[4]||'').trim(),cF=String(row[5]||'').trim();if(!cA||cA.length<2)continue;if(/^(#|order|ticket|symbol|ativo|par|time|date|type|hora|data|posição|position|aberto)/i.test(cA))continue;if(/^(balance|deposit|withdrawal|total|subtotal|resumo|summary|credit)/i.test(cA))continue;const bl=cB.toLowerCase();const isBuy=bl.includes('buy')||bl.includes('compra')||bl==='b'||bl==='long';const isSell=bl.includes('sell')||bl.includes('vend')||bl==='s'||bl==='short';if(!isBuy&&!isSell)continue;const profit=parseFloat(cF.replace(/[^0-9.\-]/g,''));if(isNaN(profit))continue;trades.push({date:key,pair:cA.toUpperCase(),dir:isBuy?'BUY':'SELL',lots:parseFloat(cC.replace(/[^0-9.]/g,''))||0.1,entry:parseFloat(cD.replace(/[^0-9.]/g,''))||0,exit:parseFloat(cE.replace(/[^0-9.]/g,''))||0,pnl:profit,xlsxIdx});}return trades;}
 const rPhotos=(key,type)=>{const p=(dd()[key]||{})[type==='pre'?'prePhotos':'posPhotos']||[];return p.map((s,i)=>`<div class="pthumb"><img src="${s}" alt="Foto ${i+1}"><button class="pdel" onclick="delPh('${key}','${type}',${i})">×</button></div>`).join('');};
@@ -506,9 +511,337 @@ function saveMkt(key,t){const d=dd()[key];if(t==='pre'){d.preText=document.getEl
 function saveNote(key){dd()[key].note=document.getElementById('nt-'+key).value;const b=event.target,o=b.innerHTML;b.innerHTML='<i class="ti ti-check"></i> Salvo!';setTimeout(()=>b.innerHTML=o,1500);}
 function swTab(el,id){const p=el.closest('.panel');p.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));p.querySelectorAll('.sbody').forEach(b=>b.classList.remove('on'));el.classList.add('active');document.getElementById(id).classList.add('on');}
 function addT(key){const pair=document.getElementById('dp-'+key).value.trim().toUpperCase()||'XAU/USD';const dir=document.getElementById('dd-'+key).value;const entry=parseFloat(document.getElementById('de-'+key).value)||0;const exit=parseFloat(document.getElementById('dx-'+key).value)||0;const lots=parseFloat(document.getElementById('dl-'+key).value)||0.1;const pnl=parseFloat(document.getElementById('dn-'+key).value)||0;dd()[key].trades.push({date:key,pair,dir,entry,exit,lots,pnl});updateAll();}
-function rmT(key,i){dd()[key].trades.splice(i,1);updateAll();}
+function rmT(key,i){const t=dd()[key].trades[i];if(t&&t.src==='tv'){const T=tvs();T.deleted.push(t.sig);}dd()[key].trades.splice(i,1);updateAll();}
 
 document.getElementById('csv-g').addEventListener('change',function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2)return;const hdr=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));const idx=k=>hdr.findIndex(h=>h.includes(k));const iDate=idx('date')>=0?idx('date'):idx('data'),iPair=idx('pair')>=0?idx('pair'):(idx('symbol')>=0?idx('symbol'):idx('par'));const iDir=idx('dir')>=0?idx('dir'):(idx('type')>=0?idx('type'):idx('side')),iEntry=idx('entry')>=0?idx('entry'):idx('open');const iExit=idx('exit')>=0?idx('exit'):idx('close'),iLots=idx('lot')>=0?idx('lot'):(idx('volume')>=0?idx('volume'):idx('size'));const iPnl=idx('pnl')>=0?idx('pnl'):(idx('profit')>=0?idx('profit'):idx('result'));let added=0;for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));if(c.length<3)continue;const pnl=parseFloat(c[iPnl])||0;const dr=iDate>=0?c[iDate]:'';const dp=dr?new Date(dr):null;const ds=dp&&!isNaN(dp)?dp.toISOString().split('T')[0]:dr;if(!ds)continue;ensureDay(ds);dd()[ds].trades.push({date:ds,pair:iPair>=0?c[iPair].toUpperCase():'XAU/USD',dir:iDir>=0?(c[iDir].toUpperCase().includes('SELL')?'SELL':'BUY'):'BUY',entry:iEntry>=0?parseFloat(c[iEntry])||0:0,exit:iExit>=0?parseFloat(c[iExit])||0:0,lots:iLots>=0?parseFloat(c[iLots])||0.1:0.1,pnl});added++;}updateAll();toast(added+' operações via CSV.');};reader.readAsText(file);e.target.value='';});
+
+/* ===== Importador Tradovate (CSV) — núcleo puro (sem DOM) ===== */
+const TV_PV={ES:50,MES:5,NQ:20,MNQ:2,YM:5,MYM:0.5,RTY:50,M2K:5,GC:100,MGC:10,SI:5000,SIL:1000,HG:25000,MHG:2500,CL:1000,MCL:100,NG:10000,ZB:1000,ZN:1000,'6E':125000,'6B':62500,'6J':12500000,'6A':100000,'6C':100000,BTC:5,MBT:0.1,ETH:50,MET:0.1,ZC:50,ZS:50,ZW:50};
+const tvRound=x=>Math.round(x*100)/100;
+const tvNK=s=>String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\/]+/g,'');
+
+function tvSymInfo(sym){
+  const s=String(sym||'').trim().toUpperCase();
+  const m=s.match(/^(.+?)([FGHJKMNQUVXZ])(\d{1,2})$/);
+  const root=m?m[1]:s;
+  return {root,pv:TV_PV[root],known:TV_PV[root]!==undefined};
+}
+
+function tvParseNum(s){
+  s=String(s==null?'':s).trim().replace(/[^\d.,\-]/g,'');
+  if(!s)return NaN;
+  const neg=s.charAt(0)==='-';s=s.replace(/-/g,'');
+  const lc=s.lastIndexOf(','),ld=s.lastIndexOf('.');let r;
+  if(lc>=0&&ld>=0)r=lc>ld?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');
+  else if(lc>=0)r=s.split(',').length>2?s.replace(/,/g,''):s.replace(',','.');
+  else if(ld>=0)r=/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)?s.replace(/\./g,''):s;
+  else r=s;
+  const n=parseFloat(r);return neg?-n:n;
+}
+
+function tvFmtLocal(d){const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function tvNormTs(s){
+  s=String(s||'').trim();if(!s)return '';
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$/);
+  if(m){
+    if(m[7]){const d=new Date(s.replace(' ','T'));if(!isNaN(d))return tvFmtLocal(d);}
+    return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]||'00'}`;
+  }
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return `${m[1]}-${m[2]}-${m[3]} 00:00:00`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m){
+    let a=+m[1],b=+m[2],day=a,mon=b;                 // ambíguo → DD/MM (padrão pt-BR)
+    if(a<=12&&b>12){mon=a;day=b;}                    // MM/DD quando o 2º campo só pode ser dia
+    const p=n=>String(n).padStart(2,'0');
+    return `${m[3]}-${p(mon)}-${p(day)} ${p(m[4]||0)}:${m[5]||'00'}:${m[6]||'00'}`;
+  }
+  return '';
+}
+
+function tvParseCSV(text){
+  text=String(text||'').replace(/^\uFEFF/,'');
+  const nl=text.indexOf('\n'),first=nl>=0?text.slice(0,nl):text;
+  const delim=first.split(';').length>first.split(',').length?';':',';
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cur);cur='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(x=>x.trim()!==''))rows.push(row);row=[];}
+    else cur+=c;
+  }
+  row.push(cur);if(row.some(x=>x.trim()!==''))rows.push(row);
+  return rows.map(r=>r.map(x=>x.trim()));
+}
+
+function tvCol(hdr,aliases){const h=hdr.map(tvNK);for(const a of aliases){const i=h.indexOf(a);if(i>=0)return i;}return -1;}
+
+function tvClassify(name,rows){
+  const fn=tvNK(name);
+  if(!rows.length){
+    if(/posic|position/.test(fn))return 'positions';
+    if(/ordem|ordens|order/.test(fn))return 'orders';
+    if(/informacao|account/.test(fn))return 'account';
+    return 'empty';
+  }
+  const h=rows[0].map(tvNK),has=(...a)=>a.some(x=>h.includes(x));
+  if(has('simbolo','symbol')&&has('titulo','title')&&has('texto','text')&&has('tempo','time','data','date'))return 'notif';
+  if(has('totalp/l')&&has('netliq'))return 'account';
+  if(/ativa|active|working/.test(fn)&&/ordem|ordens|order/.test(fn))return 'orders';
+  if(has('b/s','bs','side','lado','acao','action')&&has('avgfillprice','avgprice','precomedio','precomediodepreenchimento','filledqty','qtdpreenchida','quantidadepreenchida')&&has('filltime','timestamp','data','date','hora','time','tempo'))return 'orders-hist';
+  if(/posic|position/.test(fn))return 'positions';
+  if(/ordem|ordens|order/.test(fn))return 'orders';
+  return 'unknown';
+}
+
+function tvFillsFromNotif(rows){
+  const h=rows[0],iS=tvCol(h,['simbolo','symbol']),iT=tvCol(h,['tempo','time','data','date']),iTi=tvCol(h,['titulo','title']),iX=tvCol(h,['texto','text']);
+  const fills=[],stats={placed:0,modified:0,cancelled:0,filled:0},n=rows.length-1;
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r],title=row[iTi]||'',text=row[iX]||'';
+    if(/colocad|placed/i.test(title))stats.placed++;
+    else if(/modificad|modified/i.test(title))stats.modified++;
+    else if(/cancelad|cancel/i.test(title))stats.cancelled++;
+    if(!/executad|filled/i.test(title))continue;
+    const m=text.match(/(Comprar|Vender|Buy|Sell)\s+(\d+(?:[.,]\d+)?)\s+(?:a|at|@)\s+([\d.,]+)/i);
+    if(!m)continue;
+    const ts=tvNormTs(row[iT]);if(!ts)continue;
+    const idm=title.match(/\((\d{5,})\)/);
+    const sym=(row[iS]||'').toUpperCase()||((title.match(/\b(?:em|in)\s+([A-Z0-9]+)/)||[])[1]||'');
+    const qty=tvParseNum(m[2]),price=tvParseNum(m[3]);
+    if(!(qty>0)||isNaN(price))continue;
+    fills.push({id:idm?idm[1]:'',ts,sym,side:/^(comprar|buy)/i.test(m[1])?1:-1,qty,price,seq:n-r});  // log vem do mais novo p/ o mais antigo
+    stats.filled++;
+  }
+  return {fills,stats};
+}
+
+function tvFillsFromOrders(rows){
+  const h=rows[0];
+  const iId=tvCol(h,['orderid','idordem','id']),iS=tvCol(h,['contract','contrato','symbol','simbolo']),
+    iSide=tvCol(h,['b/s','bs','side','lado','acao','action']),
+    iQ=tvCol(h,['filledqty','qtdpreenchida','quantidadepreenchida','qtdexecutada','qty','quantity','quantidade']),
+    iP=tvCol(h,['avgfillprice','avgprice','precomedio','precomediodepreenchimento','price','preco']),
+    iT=tvCol(h,['filltime','timestamp','data','date','hora','time','tempo']),iSt=tvCol(h,['status']);
+  const fills=[],stats={placed:0,modified:0,cancelled:0,filled:0};
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r];
+    if(iSt>=0&&!/fill|execut|preench|complet/i.test(row[iSt]||''))continue;
+    const qty=tvParseNum(row[iQ]),price=tvParseNum(row[iP]),ts=tvNormTs(row[iT]);
+    const sv=String(row[iSide]||'').trim().toLowerCase();
+    const side=/^(b$|buy|compra|long)/.test(sv)?1:/^(s$|sell|vend|venda|short)/.test(sv)?-1:0;
+    if(!(qty>0)||!(price>0)||!ts||!side)continue;
+    fills.push({id:iId>=0?String(row[iId]||''):'',ts,sym:String(row[iS]||'').toUpperCase(),side,qty,price,seq:r});
+    stats.filled++;
+  }
+  return {fills,stats};
+}
+
+const tvKey=f=>f.id?[f.id,f.side,f.qty,f.price].join('|'):[f.ts,f.sym,f.side,f.qty,f.price].join('|');
+function tvMergeFills(store,newFills,fid){
+  const map=new Map();
+  store.forEach(f=>{const k=tvKey(f);if(!map.has(k))map.set(k,[]);map.get(k).push(f);});
+  let added=0,dup=0;
+  newFills.forEach(nf=>{
+    const k=tvKey(nf),arr=map.get(k)||[],ex=arr.find(f=>!f.files.includes(fid));
+    if(ex){ex.files.push(fid);dup++;}
+    else{const f=Object.assign({},nf,{files:[fid]});store.push(f);if(!map.has(k))map.set(k,[]);map.get(k).push(f);added++;}
+  });
+  return {added,dup};
+}
+
+function tvBuildTrades(fills,comm){
+  const bySym={};fills.forEach(f=>{(bySym[f.sym]=bySym[f.sym]||[]).push(f);});
+  const trades=[],open=[],unknown=new Set();
+  Object.keys(bySym).forEach(sym=>{
+    const fs=bySym[sym].slice().sort((a,b)=>a.ts<b.ts?-1:a.ts>b.ts?1:((a.id&&b.id&&a.id!==b.id)?(Number(a.id)-Number(b.id)):0)||a.seq-b.seq);
+    const info=tvSymInfo(sym);if(!info.known)unknown.add(info.root||sym);
+    const pv=info.known?info.pv:1,q=[];
+    fs.forEach(f=>{
+      let rem=f.qty;
+      while(rem>1e-9&&q.length&&q[0].side!==f.side){
+        const lot=q[0],m=Math.min(lot.qty,rem);
+        const gross=(f.price-lot.price)*lot.side*m*pv,fee=(comm||0)*m*2;
+        trades.push({date:f.ts.slice(0,10),pair:info.root,sym,dir:lot.side>0?'BUY':'SELL',lots:m,entry:lot.price,exit:f.price,
+          gross:tvRound(gross),fee:tvRound(fee),pnl:tvRound(gross-fee),src:'tv',entryTs:lot.ts,exitTs:f.ts,files:f.files,
+          sig:[sym,lot.ts,f.ts,m,lot.price,f.price].join('|')});
+        lot.qty-=m;rem-=m;if(lot.qty<=1e-9)q.shift();
+      }
+      if(rem>1e-9)q.push({side:f.side,qty:rem,price:f.price,ts:f.ts});
+    });
+    if(q.length){
+      const qty=q.reduce((s,l)=>s+l.qty,0),avg=q.reduce((s,l)=>s+l.qty*l.price,0)/qty;
+      open.push({sym,root:info.root,side:q[0].side>0?'LONG':'SHORT',qty,avg:tvRound(avg),since:q[0].ts});
+    }
+  });
+  trades.sort((a,b)=>a.exitTs<b.exitTs?-1:a.exitTs>b.exitTs?1:0);
+  return {trades,open,unknown:[...unknown]};
+}
+if(typeof module!=='undefined')module.exports={tvParseCSV,tvClassify,tvFillsFromNotif,tvFillsFromOrders,tvMergeFills,tvBuildTrades,tvParseNum,tvNormTs,tvSymInfo,tvCol};
+
+/* ===== Importador Tradovate — interface ===== */
+const tvEsc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tvs=()=>{const a=acc();if(!a.tv)a.tv={fills:[],files:[],snaps:{},deleted:[],comm:0,open:[],unknown:[]};return a.tv;};
+const TV_LABEL={notif:'Registro de notificações','orders-hist':'Histórico de ordens',account:'Informação da conta',positions:'Posições',orders:'Ordens ativas'};
+const tvReadText=f=>f.text?f.text():new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('falha na leitura'));r.readAsText(f);});
+const tvReadBuf=f=>f.arrayBuffer?f.arrayBuffer():new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('falha na leitura'));r.readAsArrayBuffer(f);});
+const tvDM=d=>d.slice(8,10)+'/'+d.slice(5,7);
+const tvIco=(n,c)=>`<i class="ti ti-${n}" style="font-size:12px;vertical-align:-2px${c?';color:'+c:''}" aria-hidden="true"></i>`;
+
+function tvSnapTime(name){
+  const m=String(name).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})/);
+  const d=m?new Date(Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6])):new Date();
+  return d.toLocaleString('pt-BR');
+}
+
+/* recalcula TODAS as operações vindas da Tradovate a partir das execuções guardadas (FIFO) */
+function tvRecompute(){
+  const T=tvs();
+  Object.values(dd()).forEach(d=>{d.trades=(d.trades||[]).filter(t=>t.src!=='tv');});
+  const r=tvBuildTrades(T.fills,T.comm||0),del=new Set(T.deleted||[]);
+  r.trades.forEach(t=>{if(del.has(t.sig))return;ensureDay(t.date);dd()[t.date].trades.push(t);});
+  T.open=r.open;T.unknown=r.unknown;
+}
+
+async function tvImportXlsx(key,f){
+  const wb=XLSX.read(new Uint8Array(await tvReadBuf(f)),{type:'array'});
+  const rows=[];
+  wb.SheetNames.forEach(n=>{XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''}).forEach(r=>rows.push(r.map(c=>String(c||'').trim())));});
+  const d=dd()[key];if(!d.xlsxFiles)d.xlsxFiles=[];
+  const idx=d.xlsxFiles.length,trades=parseXLSX(rows,key,idx);
+  if(!trades.length)return {t:'err',name:f.name,msg:'nenhuma operação encontrada (esperado: A=Ativo, B=Tipo, C=Volume, D=Abertura, E=Fechamento, F=Lucro).'};
+  d.xlsxFiles.push({name:f.name,count:trades.length});
+  d.trades=[...d.trades,...trades];
+  return {t:'ok',name:f.name,msg:`XLSX: ${trades.length} op · ${fmtU(trades.reduce((s,t)=>s+t.pnl,0))} → ${tvDM(key)}`};
+}
+
+async function tvImportCsv(f){
+  const T=tvs(),text=await tvReadText(f),rows=tvParseCSV(text),kind=tvClassify(f.name,rows);
+  const fid='tvf'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if(kind==='unknown')return [{t:'err',name:f.name,msg:'formato de CSV não reconhecido. Colunas: '+tvEsc((rows[0]||[]).slice(0,8).join(', '))}];
+  if(kind==='empty')return [{t:'warn',name:f.name,msg:'arquivo vazio.'}];
+  if(kind==='notif'||kind==='orders-hist'){
+    const r=kind==='notif'?tvFillsFromNotif(rows):tvFillsFromOrders(rows);
+    if(!r.fills.length)return [{t:'warn',name:f.name,msg:'nenhuma execução (fill) encontrada neste arquivo.'}];
+    const m=tvMergeFills(T.fills,r.fills,fid);
+    if(!m.added){T.fills.forEach(x=>{x.files=x.files.filter(i=>i!==fid);});T.fills=T.fills.filter(x=>x.files.length);return [{t:'warn',name:f.name,msg:`já importado antes (${m.dup} execuções repetidas ignoradas).`}];}
+    T.files.push({id:fid,name:f.name,kind,n:r.fills.length,dup:m.dup,stats:r.stats});
+    return [{t:'ok',name:f.name,kind,fid,n:r.fills.length,dup:m.dup}];
+  }
+  // snapshots (conta / posições / ordens ativas): o mais recente de cada tipo substitui o anterior
+  const old=T.files.find(x=>x.kind===kind);if(old)T.files=T.files.filter(x=>x!==old);
+  T.snaps[kind]={name:f.name,at:tvSnapTime(f.name),headers:rows[0]||[],rows:rows.slice(1)};
+  T.files.push({id:fid,name:f.name,kind,n:rows.length?rows.length-1:0});
+  const body=kind==='account'?'snapshot da conta salvo.':(rows.length>1?`${rows.length-1} linha(s) salvas.`:'vazio — sem '+(kind==='positions'?'posições abertas':'ordens ativas')+' no momento.');
+  return [{t:'ok',name:f.name,msg:`${TV_LABEL[kind]}: ${body}`}];
+}
+
+function tvSetStatus(key,cls,html){window._impMsg={key,cls,html};const el=document.getElementById('xl-ist-'+key);if(el){el.className='ist '+cls;el.innerHTML=html;}}
+
+async function addFiles(key,fileList,input){
+  const files=[...(fileList||[])];if(input)input.value='';
+  if(!files.length)return;
+  ensureDay(key);
+  tvSetStatus(key,'ld',`${tvIco('loader')} Lendo ${files.length} arquivo${files.length>1?'s':''}...`);
+  const log=[];
+  for(const f of files){
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    try{
+      if(ext==='xlsx'||ext==='xls')log.push(await tvImportXlsx(key,f));
+      else if(ext==='csv'||ext==='txt')log.push(...await tvImportCsv(f));
+      else log.push({t:'err',name:f.name,msg:'extensão não suportada (use .xlsx, .xls ou .csv).'});
+    }catch(e){log.push({t:'err',name:f.name,msg:'erro ao ler: '+e.message});}
+  }
+  tvRecompute();
+  const T=tvs(),trs=allTrades().filter(t=>t.src==='tv'),lines=[];
+  log.forEach(e=>{
+    let msg=e.msg;
+    if(e.fid){
+      const ft=trs.filter(t=>t.files.includes(e.fid)),p=ft.reduce((s,t)=>s+t.pnl,0),by={};
+      ft.forEach(t=>by[t.date]=(by[t.date]||0)+1);
+      const days=Object.keys(by).sort().map(d=>`${tvDM(d)} (${by[d]})`).join(', ');
+      msg=`${TV_LABEL[e.kind]}: ${e.n} execuções${e.dup?` (${e.dup} já existiam)`:''} → ${ft.length} op · ${fmtU(p)}${days?' · dias: '+days:''}`;
+    }
+    const ic=e.t==='ok'?tvIco('check','#085041'):e.t==='warn'?tvIco('alert-triangle','#8a5a00'):tvIco('x','#A32D2D');
+    lines.push(`<div>${ic} <strong>${tvEsc(e.name)}</strong> — ${e.msg&&!e.fid?(e.t==='err'?e.msg:tvEsc(e.msg)):tvEsc(msg)}</div>`);
+  });
+  const kinds=new Set(T.files.map(f=>f.kind));
+  if(kinds.has('notif')&&kinds.has('orders-hist'))lines.push(`<div>${tvIco('alert-triangle','#8a5a00')} Há log de notificações e histórico de ordens na mesma conta. Se cobrirem o mesmo período, as execuções podem ser contadas duas vezes.</div>`);
+  if(T.unknown.length)lines.push(`<div>${tvIco('alert-triangle','#8a5a00')} Contrato sem multiplicador conhecido (${tvEsc(T.unknown.join(', '))}): P&L calculado em pontos ×1. Ajuste TV_PV no código.</div>`);
+  if(T.open.length)lines.push(`<div>${tvIco('alert-triangle','#8a5a00')} Posição aberta após as execuções: ${T.open.map(o=>`${o.side} ${o.qty} ${tvEsc(o.sym)} @ ${o.avg}`).join(' · ')}. Fica fora do P&L até ser fechada (ou pode ter sido aberta antes do período do arquivo).</div>`);
+  const anyOk=log.some(e=>e.t==='ok');
+  tvSetStatus(key,anyOk?'ok':'err',lines.join(''));
+  const nOk=log.filter(e=>e.t==='ok').length;
+  toast(`${nOk}/${files.length} arquivo${files.length>1?'s':''} importado${nOk!==1?'s':''}.`);
+  updateAll();
+}
+const addXlsx=(key,input)=>addFiles(key,input.files,input);   // compatibilidade
+
+function dzOver(e,el){e.preventDefault();el.classList.add('over');}
+function dzLeave(el){el.classList.remove('over');}
+function dzDrop(e,key,el){e.preventDefault();el.classList.remove('over');addFiles(key,e.dataTransfer.files,null);}
+function tvSetComm(v){const T=tvs();T.comm=Math.max(0,parseFloat(String(v).replace(',','.'))||0);tvRecompute();updateAll();}
+
+function rmTvFile(fid){
+  const T=tvs(),f=T.files.find(x=>x.id===fid);if(!f)return;
+  if(!confirm(`Remover "${f.name}"? As operações calculadas a partir dele serão recalculadas.`))return;
+  if(f.kind==='notif'||f.kind==='orders-hist'){T.fills.forEach(x=>{x.files=x.files.filter(i=>i!==fid);});T.fills=T.fills.filter(x=>x.files.length);}
+  else delete T.snaps[f.kind];
+  T.files=T.files.filter(x=>x.id!==fid);
+  tvRecompute();toast(`${f.name} removido.`);updateAll();
+}
+
+function tvTable(headers,rows){
+  if(!rows.length)return '';
+  return `<div style="overflow-x:auto"><table class="tbl" style="table-layout:auto;min-width:300px"><thead><tr>${headers.map(h=>`<th>${tvEsc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,50).map(r=>`<tr>${headers.map((_,i)=>`<td>${tvEsc(r[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function tvPanelHtml(){
+  const T=tvs();if(!T.files.length)return '';
+  const trs=allTrades().filter(t=>t.src==='tv');
+  const fl=T.files.map(f=>{
+    let sub=TV_LABEL[f.kind],pn='';
+    if(f.kind==='notif'||f.kind==='orders-hist'){
+      const ft=trs.filter(t=>t.files.includes(f.id)),p=ft.reduce((s,t)=>s+t.pnl,0),st=f.stats||{};
+      sub+=` · ${f.n} execuções → ${ft.length} op`+(f.kind==='notif'?` · ordens: ${st.placed||0} colocadas, ${st.modified||0} modificadas, ${st.cancelled||0} canceladas`:'');
+      pn=`<div class="tvf-p ${p>=0?'pos-t':'neg-t'}">${fmtU(p)}</div>`;
+    }else sub+=' · snapshot de '+tvEsc((T.snaps[f.kind]||{}).at||'');
+    return `<div class="tvf">${tvIco('file-spreadsheet','#639922')}<div class="tvf-n"><div class="tvf-nm" title="${tvEsc(f.name)}">${tvEsc(f.name)}</div><div class="tvf-s">${sub}</div></div>${pn}<button class="btn btn-xs btn-danger" onclick="rmTvFile('${f.id}')" aria-label="Remover"><i class="ti ti-trash" style="font-size:11px"></i></button></div>`;
+  }).join('');
+  let cards='';
+  const ac=T.snaps.account;
+  if(ac&&ac.rows[0]){
+    const r=ac.rows[0],sum=trs.reduce((s,t)=>s+t.pnl,0),iTot=tvCol(ac.headers,['totalp/l','pltotal']);
+    cards+=`<div class="mkc" style="margin-top:8px"><div class="mkl">${tvIco('wallet')} Conta Tradovate <span style="font-weight:400;color:var(--color-text-tertiary)">· ${tvEsc(ac.at)}</span></div><div class="agrid4">${ac.headers.map((h,i)=>{const v=tvParseNum(r[i]);const num=!isNaN(v);return `<div class="astat"><div class="astat-l">${tvEsc(h)}</div><div class="astat-v ${num&&/p\/l/i.test(h)?(v>=0?'pos':'neg'):''}">${num?fmtU(v):tvEsc(r[i])}</div></div>`;}).join('')}</div>`;
+    if(iTot>=0&&trs.length){const tot=tvParseNum(r[iTot]);if(!isNaN(tot))cards+=`<div style="font-size:11px;color:var(--color-text-secondary);margin-top:6px;line-height:1.6">Conferência: P/L total da conta <strong>${fmtU(tot)}</strong> · soma das operações importadas <strong>${fmtU(sum)}</strong> · diferença <strong>${fmtU(tot-sum)}</strong>. Diferença é esperada se os arquivos de execuções cobrem só parte do histórico da conta, ou por comissões/taxas.</div>`;}
+    cards+='</div>';
+  }
+  const snapCard=(k,ico,title,emptyTxt)=>{const s=T.snaps[k];if(!s)return '';return `<div class="mkc" style="margin-top:8px"><div class="mkl">${tvIco(ico)} ${title} <span style="font-weight:400;color:var(--color-text-tertiary)">· ${tvEsc(s.at)}</span></div>${s.rows.length?tvTable(s.headers,s.rows):`<div style="font-size:12px;color:var(--color-text-tertiary)">${emptyTxt}</div>`}</div>`;};
+  cards+=snapCard('positions','stack-2','Posições abertas','Nenhuma posição aberta.');
+  cards+=snapCard('orders','list-details','Ordens ativas','Nenhuma ordem ativa.');
+  if(T.open.length)cards+=`<div class="mkc" style="margin-top:8px"><div class="mkl">${tvIco('stack-2')} Posição aberta (derivada das execuções)</div>${tvTable(['Contrato','Lado','Qtd','Preço médio','Desde'],T.open.map(o=>[o.sym,o.side,o.qty,o.avg,o.since]))}</div>`;
+  return `<div style="margin-bottom:8px">${fl}</div>${cards}`;
+}
+
+/* mantém a aba aberta e a mensagem de importação quando o painel é redesenhado */
+const _swTabBase=swTab;
+swTab=function(el,id){window._dayTab=id;return _swTabBase(el,id);};
+const _renderDayBase=renderDayPanel;
+renderDayPanel=function(key){
+  _renderDayBase(key);
+  const want=window._dayTab,p=document.querySelector('#day-panel .panel');
+  if(p&&want&&want.endsWith(key)&&document.getElementById(want)){
+    p.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+    p.querySelectorAll('.sbody').forEach(b=>b.classList.remove('on'));
+    document.getElementById(want).classList.add('on');
+    const tab=[...p.querySelectorAll('.stab')].find(t=>(t.getAttribute('onclick')||'').indexOf("'"+want+"'")>=0);
+    if(tab)tab.classList.add('active');
+  }
+  const m=window._impMsg,el=m&&m.key===key&&document.getElementById('xl-ist-'+key);
+  if(el){el.className='ist '+m.cls;el.innerHTML=m.html;}
+};
 
 renderAccBar();updateAll();
 </script>
